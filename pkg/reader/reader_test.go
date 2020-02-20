@@ -59,15 +59,15 @@ func TestParseRss(t *testing.T) {
 	require.NotNil(t, rss)
 
 	// Test channel struct
-	channel := rss.Channel
+	channel := rss.Channels
 	require.NotNil(t, channel)
-	assert.Equal(t, "Liftoff News", rss.Channel.Title)
-	assert.Equal(t, "Liftoff to Space Exploration.", rss.Channel.Description)
-	assert.Equal(t, "http://liftoff.msfc.nasa.gov/", rss.Channel.Link)
-	require.Len(t, rss.Channel.Items, 4)
+	assert.Equal(t, "Liftoff News", rss.Channels[0].Title)
+	assert.Equal(t, "Liftoff to Space Exploration.", rss.Channels[0].Description)
+	assert.Equal(t, "http://liftoff.msfc.nasa.gov/", rss.Channels[0].Link)
+	require.Len(t, rss.Channels[0].Items, 4)
 
 	// Test item struct
-	item0 := rss.Channel.Items[0]
+	item0 := rss.Channels[0].Items[0]
 	assert.Equal(t, "Star City", item0.Title)
 	assert.Equal(t, "How do Americans get ready to work with Russians aboard the International Space Station? "+
 		"They take a crash course in culture, language and protocol at Russia's "+
@@ -81,4 +81,9 @@ func TestParseRss(t *testing.T) {
 		item0.PublishDate.Time))
 	assert.Equal(t, "Tomalak's Realm", item0.Source.Title)
 	assert.Equal(t, "http://www.tomalak.org/links2.xml", item0.Source.SourceURL)
+
+	// Test missing source
+	item1 := rss.Channels[0].Items[1]
+	assert.Equal(t, "Liftoff News", item1.Source.Title)
+	assert.Equal(t, "http://liftoff.msfc.nasa.gov/", item1.Source.SourceURL)
 }

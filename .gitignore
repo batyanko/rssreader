@@ -1,4 +1,4 @@
 *.iml
 .idea
 
-cmd/reader/reader
+cmd/reader_app/reader
