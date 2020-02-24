@@ -1,14 +1,22 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
+	"time"
 
 	"github.com/batyanko/rssreader/pkg/reader"
 )
+
+type jsonChannel struct {
+	Channel string
+	Items   []reader.RssItem
+}
 
 func main() {
 	appName := filepath.Base(os.Args[0])
@@ -22,28 +30,38 @@ func main() {
 		fmt.Printf("Arguments:\n")
 		fmt.Printf("Only URL addresses are accepted as arguments.\n\n")
 		fmt.Printf("Output order:\n")
-		fmt.Printf("Results are displayed per input order of the URLs, then arranged by RSS channel.\n")
+		fmt.Printf("Results are displayed per alphabetically sorted RSS channel.\n")
 		fmt.Printf("RSS items for each channel are sorted by publishing date in descending order.\n")
 		return
 	}
 
-	for i, url := range urls {
-		fmt.Println(i, url)
+	// Get a slice of parsed RSS items
+	items, err := reader.Parse(urls)
+	if err != nil {
+		// TODO add logger?
+		panic(err)
+	}
 
-		items, err := reader.Parse(urls)
-		if err != nil {
-			// TODO add logger?
-			panic(err)
-		}
+	// Byte array to populate with sorted items as JSON, to be persisted as file.
+	byteRss := []byte(fmt.Sprintf("[\n"))
 
-		channels, sortedItems := sortItems(items)
+	// Range alphabetically through channels.
+	channels, sortedItems := sortItems(items)
+	for _, channel := range channels {
+		printItems(channel, sortedItems[channel])
+		appendJson(channel, sortedItems, &byteRss)
+	}
 
-		for _, channel := range channels {
-			printItems(channel, sortedItems[channel])
-		}
+	// Finalize JSON
+	byteRss = append(byteRss[:len(byteRss)-2], []byte(fmt.Sprintf("\n]\n"))...)
+
+	// Write JSON to file
+	if err := ioutil.WriteFile(fmt.Sprintf("rss_items_%v.json", time.Now().Unix()), byteRss, 0644); err != nil {
+		panic(err)
 	}
 }
 
+// sortItems sorts items and channels alphabetically.
 func sortItems(items []reader.RssItem) ([]string, map[string][]reader.RssItem) {
 	channels := []string{}
 	channelItems := map[string][]reader.RssItem{}
@@ -70,6 +88,24 @@ func sortItems(items []reader.RssItem) ([]string, map[string][]reader.RssItem) {
 		})
 	}
 	return channels, channelItems
+}
+
+// Append JSON data for each channel.
+func appendJson(channel string, items map[string][]reader.RssItem, byteRss *[]byte) {
+	jsonCh := jsonChannel{
+		channel,
+		items[channel],
+	}
+
+	channelJson, err := json.MarshalIndent(jsonCh, " ", " ")
+	if err != nil {
+		panic(err)
+	}
+
+	// Append to JSON
+	*byteRss = append(*byteRss, []byte(fmt.Sprintf(" "))...)
+	*byteRss = append(*byteRss, channelJson...)
+	*byteRss = append(*byteRss, []byte(fmt.Sprintf(",\n"))...)
 }
 
 // Print out a slice of RSS items for a given channel.

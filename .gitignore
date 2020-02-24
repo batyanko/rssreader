@@ -1,4 +1,5 @@
 *.iml
 .idea
+*.json
 
 cmd/reader_app/reader_app
