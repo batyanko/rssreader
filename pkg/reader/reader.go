@@ -17,7 +17,7 @@ func Parse(urls []string) ([]RssItem, error) {
 	return extractItems(channels), nil
 }
 
-// extract channels given a slice of URLs
+// extractChannels given a slice of URLs
 func extractChannels(urls []string) ([]rssChannel, error) {
 	channels := []rssChannel{}
 	for _, url := range urls {

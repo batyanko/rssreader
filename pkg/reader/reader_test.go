@@ -1,12 +1,33 @@
 package reader
 
 import (
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func setup(t *testing.T) (string, *http.ServeMux, func()) {
+	mux := http.NewServeMux()
+	server := httptest.NewServer(mux)
+	url := server.URL
+
+	return url, mux, func() {
+		server.Close()
+	}
+}
+
+func writeResponse(t *testing.T, w http.ResponseWriter, s string) {
+	w.Header().Set("Content-Type", "application/xml")
+	w.WriteHeader(http.StatusOK)
+
+	_, err := w.Write([]byte(s))
+	require.Nil(t, err)
+}
 
 var testRss = `
 <?xml version="1.0"?>
@@ -53,6 +74,37 @@ var testRss = `
 </rss>
 `
 
+func TestParse(t *testing.T) {
+	url, mux, teardown := setup(t)
+	defer teardown()
+	mux.HandleFunc("/files/sample-rss-2.xml", func(w http.ResponseWriter, r *http.Request) {
+		writeResponse(t, w, testRss)
+		assert.Equal(t, http.MethodGet, r.Method)
+	})
+
+	items, err := Parse([]string{fmt.Sprintf("%s/files/sample-rss-2.xml", url)})
+	assert.Nil(t, err)
+	require.NotNil(t, items)
+
+	assert.Equal(t, "Star City", items[0].Title)
+	assert.Equal(t, "How do Americans get ready to work with Russians aboard the International Space Station? "+
+		"They take a crash course in culture, language and protocol at Russia's "+
+		"<a href=\"http://howe.iki.rssi.ru/GCTC/gctc_e.htm\">Star City</a>.", items[0].Description)
+	assert.Equal(t, "http://liftoff.msfc.nasa.gov/news/2003/news-starcity.asp", items[0].Link)
+	utc, err := time.LoadLocation("GMT")
+	require.Nil(t, err)
+	require.NotNil(t, utc)
+	//Tue, 03 Jun 2003 09:39:21 GMT
+	assert.True(t, time.Date(2003, time.Month(6), 3, 9, 39, 21, 0, utc).Equal(
+		items[0].PublishDate))
+	assert.Equal(t, "Tomalak's Realm", items[0].Source)
+	assert.Equal(t, "http://www.tomalak.org/links2.xml", items[0].SourceURL)
+
+	// Test missing source
+	assert.Equal(t, "Liftoff News", items[1].Source)
+	assert.Equal(t, "http://liftoff.msfc.nasa.gov/", items[1].SourceURL)
+}
+
 func TestParseRss(t *testing.T) {
 	rss, err := parseRss([]byte(testRss))
 	require.Nil(t, err)
@@ -81,9 +133,4 @@ func TestParseRss(t *testing.T) {
 		item0.PublishDate.Time))
 	assert.Equal(t, "Tomalak's Realm", item0.Source.Title)
 	assert.Equal(t, "http://www.tomalak.org/links2.xml", item0.Source.SourceURL)
-
-	// Test missing source
-	item1 := rss.Channels[0].Items[1]
-	assert.Equal(t, "Liftoff News", item1.Source.Title)
-	assert.Equal(t, "http://liftoff.msfc.nasa.gov/", item1.Source.SourceURL)
 }
