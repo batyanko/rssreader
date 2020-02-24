@@ -11,19 +11,20 @@ Main features:
 https://golang.org/doc/install
 
 2. Get the repo, either as git or using `go get`:
-```
-$ go get -u github.com/batyanko/rssreader/
-```
+    ```
+    $ go get -u github.com/batyanko/rssreader/
+    ```
+3. Run `make setup` to download linter and unit test dependencies
 
 ### Usage
 
 1. Open a console and change to the `cmd/reader_app` dir in the project
 
 2. Build the binary and run it (following example for unix-style terminal):
-```
-$ go build
-$ ./reader_app 
-```
+    ```
+    $ go build
+    $ ./reader_app 
+    ```
 
 Example output:
 ```

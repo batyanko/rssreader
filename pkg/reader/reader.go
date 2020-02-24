@@ -26,7 +26,11 @@ func extractChannels(urls []string) ([]rssChannel, error) {
 			return nil, err
 		}
 		defer resp.Body.Close()
+
 		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
 
 		rss, err := parseRss(body)
 		if err != nil {

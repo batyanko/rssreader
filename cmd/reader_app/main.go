@@ -49,7 +49,7 @@ func main() {
 	channels, sortedItems := sortItems(items)
 	for _, channel := range channels {
 		printItems(channel, sortedItems[channel])
-		appendJson(channel, sortedItems, &byteRss)
+		appendJSON(channel, sortedItems, &byteRss)
 	}
 
 	// Finalize JSON
@@ -91,20 +91,20 @@ func sortItems(items []reader.RssItem) ([]string, map[string][]reader.RssItem) {
 }
 
 // Append JSON data for each channel.
-func appendJson(channel string, items map[string][]reader.RssItem, byteRss *[]byte) {
+func appendJSON(channel string, items map[string][]reader.RssItem, byteRss *[]byte) {
 	jsonCh := jsonChannel{
 		channel,
 		items[channel],
 	}
 
-	channelJson, err := json.MarshalIndent(jsonCh, " ", " ")
+	channelJSON, err := json.MarshalIndent(jsonCh, " ", " ")
 	if err != nil {
 		panic(err)
 	}
 
 	// Append to JSON
 	*byteRss = append(*byteRss, []byte(fmt.Sprintf(" "))...)
-	*byteRss = append(*byteRss, channelJson...)
+	*byteRss = append(*byteRss, channelJSON...)
 	*byteRss = append(*byteRss, []byte(fmt.Sprintf(",\n"))...)
 }
 

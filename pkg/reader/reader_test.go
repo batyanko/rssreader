@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func setup(t *testing.T) (string, *http.ServeMux, func()) {
+func setup() (string, *http.ServeMux, func()) {
 	mux := http.NewServeMux()
 	server := httptest.NewServer(mux)
 	url := server.URL
@@ -29,7 +29,9 @@ func writeResponse(t *testing.T, w http.ResponseWriter, s string) {
 	require.Nil(t, err)
 }
 
-var testRss = `
+const magicDate = 1054633161
+
+const testRss = `
 <?xml version="1.0"?>
 <rss version="2.0">
    <channel>
@@ -75,7 +77,7 @@ var testRss = `
 `
 
 func TestParse(t *testing.T) {
-	url, mux, teardown := setup(t)
+	url, mux, teardown := setup()
 	defer teardown()
 	mux.HandleFunc("/files/sample-rss-2.xml", func(w http.ResponseWriter, r *http.Request) {
 		writeResponse(t, w, testRss)
@@ -95,8 +97,8 @@ func TestParse(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, utc)
 	//Tue, 03 Jun 2003 09:39:21 GMT
-	assert.True(t, time.Date(2003, time.Month(6), 3, 9, 39, 21, 0, utc).Equal(
-		items[0].PublishDate))
+	assert.True(t, (items[0].PublishDate).Equal(time.Unix(magicDate, 0)))
+	fmt.Println(items[0].PublishDate.Unix())
 	assert.Equal(t, "Tomalak's Realm", items[0].Source)
 	assert.Equal(t, "http://www.tomalak.org/links2.xml", items[0].SourceURL)
 
@@ -129,8 +131,7 @@ func TestParseRss(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, utc)
 	//Tue, 03 Jun 2003 09:39:21 GMT
-	assert.True(t, time.Date(2003, time.Month(6), 3, 9, 39, 21, 0, utc).Equal(
-		item0.PublishDate.Time))
+	assert.True(t, (item0.PublishDate).Equal(time.Unix(magicDate, 0)))
 	assert.Equal(t, "Tomalak's Realm", item0.Source.Title)
 	assert.Equal(t, "http://www.tomalak.org/links2.xml", item0.Source.SourceURL)
 }
